@@ -147,3 +147,77 @@ _23 = 21;
     ];
     test_lexer(input, &expects);
 }
+
+#[test]
+fn test_keywords() {
+    let input = r"
+function foo() {
+    if (5 < 10) {
+        return true;
+    } else {
+        return false;
+    }
+}
+    ";
+    let expects = [
+        Token::Function,
+        Token::Identifier { name: "foo".to_string() },
+        Token::LParen,
+        Token::RParen,
+        Token::LBrace,
+
+        Token::If,
+        Token::LParen,
+        Token::Number { value: 5.0 },
+        Token::LT,
+        Token::Number { value: 10.0 },
+        Token::RParen,
+
+        Token::LBrace,
+        Token::Return,
+        Token::True,
+        Token::Semicolon,
+        Token::RBrace,
+
+        Token::Else,
+        Token::LBrace,
+        Token::Return,
+        Token::False,
+        Token::Semicolon,
+        Token::RBrace,
+
+        Token::RBrace,
+        Token::EOF,
+    ];
+    test_lexer(input, &expects);
+}
+
+#[test]
+fn test_function_call() {
+    let input = r"
+let sum = add(1, 2);
+console.log(sum);
+    ";
+    let expects = [
+        Token::Let,
+        Token::Identifier { name: "sum".to_string() },
+        Token::Assign,
+        Token::Identifier { name: "add".to_string() },
+        Token::LParen,
+        Token::Number { value: 1.0 },
+        Token::Commas,
+        Token::Number { value: 2.0 },
+        Token::RParen,
+        Token::Semicolon,
+
+        Token::Identifier { name: "console".to_string() },
+        Token::Dot,
+        Token::Identifier { name: "log".to_string() },
+        Token::LParen,
+        Token::Identifier { name: "sum".to_string() },
+        Token::RParen,
+        Token::Semicolon,
+        Token::EOF,
+    ];
+    test_lexer(input, &expects);
+}

@@ -40,11 +40,12 @@ impl<'a> Lexer<'a> {
             b')' => Token::RParen,
             b'{' => Token::LBrace,
             b'}' => Token::RBrace,
+            b'.' => Token::Dot,
             0 => Token::EOF,
             _ => {
                 if self.ch.is_ascii_alphabetic() || self.ch == b'_' {
                     let name = self.read_identifier();
-                    return Token::new_id(name);
+                    return Lexer::lookup_ident(name);
                 }
                 if self.ch.is_ascii_digit() {
                     let value = self.read_number();
@@ -87,5 +88,13 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
         &self.input[start .. self.position]
+    }
+
+    fn lookup_ident(name: &str) -> Token {
+        if let Some(v) = KEYWORKS.get(name) {
+            v.clone()
+        } else {
+            Token::new_id(name)
+        }
     }
 }

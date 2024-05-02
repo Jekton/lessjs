@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Illegal,
     EOF,
@@ -16,11 +17,20 @@ pub enum Token {
 
     Commas,     // ,
     Semicolon,  // ;
+    Dot,        // .
 
     LParen,     // (
     RParen,     // )
     LBrace,     // {
     RBrace,     // }
+
+    If,
+    Else,
+    True,
+    False,
+    Function,
+    Let,
+    Return,
 
     Identifier { name: String },
     Number { value: f64 },
@@ -44,4 +54,18 @@ impl Token {
         }
         Token::Number { value: value.parse().unwrap() }
     }
+}
+
+lazy_static! {
+    pub static ref KEYWORKS: HashMap<&'static str, Token> = {
+        let mut map = HashMap::new();
+        map.insert("if", Token::If);
+        map.insert("else", Token::Else);
+        map.insert("true", Token::True);
+        map.insert("false", Token::False);
+        map.insert("function", Token::Function);
+        map.insert("let", Token::Let);
+        map.insert("return", Token::Return);
+        map
+    };
 }
