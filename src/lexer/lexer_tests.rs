@@ -221,3 +221,35 @@ console.log(sum);
     ];
     test_lexer(input, &expects);
 }
+
+#[test]
+fn test_eq_ne() {
+    let input = r"
+9 == 9;
+9 != 10;
+10 !== 11;
+11 === 11;
+    ";
+    let expects = [
+        Token::Number { value: 9.0 },
+        Token::EQ,
+        Token::Number { value: 9.0 },
+        Token::Semicolon,
+
+        Token::Number { value: 9.0 },
+        Token::NE,
+        Token::Number { value: 10.0 },
+        Token::Semicolon,
+
+        Token::Number { value: 10.0 },
+        Token::SNE,
+        Token::Number { value: 11.0 },
+        Token::Semicolon,
+
+        Token::Number { value: 11.0 },
+        Token::SEQ,
+        Token::Number { value: 11.0 },
+        Token::Semicolon,
+    ];
+    test_lexer(input, &expects);
+}

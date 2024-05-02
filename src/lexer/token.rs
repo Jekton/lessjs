@@ -1,3 +1,6 @@
+
+#![allow(unused)]
+
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -14,6 +17,10 @@ pub enum Token {
 
     LT,         // <
     GT,         // >
+    EQ,         // ==
+    NE,         // !=
+    SEQ,         // ===
+    SNE,         // !==
 
     Commas,     // ,
     Semicolon,  // ;

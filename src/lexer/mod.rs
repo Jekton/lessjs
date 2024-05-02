@@ -26,8 +26,34 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         let token = match self.ch {
-            b'=' => Token::Assign,
-            b'!' => Token::Band,
+            b'=' => {
+                if self.peak_char() == b'=' {
+                    if self.peak_third_char() == b'=' {
+                        self.read_char();
+                        self.read_char();
+                        Token::SEQ
+                    } else {
+                        self.read_char();
+                        Token::EQ
+                    }
+                } else {
+                    Token::Assign
+                }
+            }
+            b'!' => {
+                if self.peak_char() == b'=' {
+                    if self.peak_third_char() == b'=' {
+                        self.read_char();
+                        self.read_char();
+                        Token::SNE
+                    } else {
+                        self.read_char();
+                        Token::NE
+                    }
+                } else {
+                    Token::Band
+                }
+            }
             b'+' => Token::Plus,
             b'-' => Token::Minus,
             b'*' => Token::Asterisk,
@@ -72,6 +98,23 @@ impl<'a> Lexer<'a> {
         }
         self.position = self.read_position;
         self.read_position += 1;
+    }
+
+    fn peak_char(&self) -> u8 {
+        if self.read_position >= self.input.len() {
+            0
+        } else {
+            self.input.as_bytes()[self.read_position]
+        }
+    }
+
+    fn peak_third_char(&self) -> u8 {
+        let pos = self.read_position + 1;
+        if pos >= self.input.len() {
+            0
+        } else {
+            self.input.as_bytes()[pos]
+        }
     }
 
     fn read_identifier(&mut self) -> &str {
