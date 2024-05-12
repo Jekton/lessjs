@@ -1,6 +1,6 @@
 
 mod lexer_tests;
-mod token;
+pub mod token;
 
 use token::*;
 
