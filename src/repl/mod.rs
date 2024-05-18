@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use crate::lexer::Lexer;
-use crate::lexer::token::{Token, TokenKind};
+use crate::lexer::token::TokenKind;
 
 const PROMPT: &str = ">> ";
 

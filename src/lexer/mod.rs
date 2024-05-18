@@ -23,7 +23,7 @@ impl<'a> Lexer<'a> {
         return lexer;
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
         let token = match self.ch {
             b'=' => {
@@ -117,7 +117,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn read_identifier(&mut self) -> &str {
+    fn read_identifier(&mut self) -> &'a str {
         let start = self.position;
         while self.ch.is_ascii_alphanumeric() || self.ch == b'_' {
             self.read_char();
@@ -125,7 +125,7 @@ impl<'a> Lexer<'a> {
         &self.input[start .. self.position]
     }
 
-    fn read_number(&mut self) -> &str {
+    fn read_number(&mut self) -> &'a str {
         let start = self.position;
         while self.ch.is_ascii_alphanumeric() || self.ch == b'.' {
             self.read_char();
@@ -133,7 +133,7 @@ impl<'a> Lexer<'a> {
         &self.input[start .. self.position]
     }
 
-    fn lookup_ident(name: &str) -> Token {
+    fn lookup_ident(name: &'a str) -> Token<'a> {
         if let Some(kind) = KEYWORKS.get(name) {
             (*kind).into()
         } else {

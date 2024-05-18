@@ -4,6 +4,7 @@ use std::io::{stdin, stdout};
 extern crate lazy_static;
 
 mod lexer;
+mod parser;
 mod repl;
 
 fn main() {
