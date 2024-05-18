@@ -15,25 +15,25 @@ fn test_lexer(input: &str, expects: &[Token]) {
 fn test_simple_token() {
     let input = "=+-*/!<>(){},;";
     let expects = [
-        Token::Assign,
-        Token::Plus,
-        Token::Minus,
-        Token::Asterisk,
-        Token::Slash,
-        Token::Band,
+        TokenKind::Assign,
+        TokenKind::Plus,
+        TokenKind::Minus,
+        TokenKind::Asterisk,
+        TokenKind::Slash,
+        TokenKind::Band,
 
-        Token::LT,
-        Token::GT,
-        Token::LParen,
-        Token::RParen,
-        Token::LBrace,
-        Token::RBrace,
+        TokenKind::LT,
+        TokenKind::GT,
+        TokenKind::LParen,
+        TokenKind::RParen,
+        TokenKind::LBrace,
+        TokenKind::RBrace,
 
-        Token::Commas,
-        Token::Semicolon,
+        TokenKind::Commas,
+        TokenKind::Semicolon,
 
-        Token::EOF,
-    ];
+        TokenKind::EOF,
+    ].map(| kind | Token::from(kind) );
     test_lexer(input, &expects);
 }
 
@@ -45,7 +45,7 @@ fn test_id() {
         Token::new_id("_fo0"),
         Token::new_id("bar_f23"),
         Token::new_id("_23"),
-        Token::EOF,
+        TokenKind::EOF.into(),
     ];
     test_lexer(input, &expects);
 }
@@ -54,10 +54,10 @@ fn test_id() {
 fn test_decimal() {
     let input = "12 34 0 42";
     let expects = [
-        Token::Number{ value: 12.0 },
-        Token::Number{ value: 34.0 },
-        Token::Number{ value: 0.0 },
-        Token::Number{ value: 42.0 },
+        Token::new_number("12"),
+        Token::new_number("34"),
+        Token::new_number("0"),
+        Token::new_number("42"),
     ];
     test_lexer(input, &expects);
 }
@@ -66,10 +66,10 @@ fn test_decimal() {
 fn test_octal() {
     let input = "012 034 0 042";
     let expects = [
-        Token::Number{ value: 10.0 },
-        Token::Number{ value: 28.0 },
-        Token::Number{ value: 0.0 },
-        Token::Number{ value: 34.0 },
+        Token::new_number("012"),
+        Token::new_number("034"),
+        Token::new_number("0"),
+        Token::new_number("042"),
     ];
     test_lexer(input, &expects);
 }
@@ -78,10 +78,10 @@ fn test_octal() {
 fn test_hex() {
     let input = "0x12 0xff 0Xfd 0x42";
     let expects = [
-        Token::Number{ value: 18.0 },
-        Token::Number{ value: 255.0 },
-        Token::Number{ value: 253.0 },
-        Token::Number{ value: 66.0 },
+        Token::new_number("0x12"),
+        Token::new_number("0xff"),
+        Token::new_number("0Xfd"),
+        Token::new_number("0x42"),
     ];
     test_lexer(input, &expects);
 }
@@ -90,28 +90,18 @@ fn test_hex() {
 fn test_float() {
     let input = "12.2 2.4e8";
     let expects = [
-        Token::Number{ value: 12.2 },
-        Token::Number{ value: 2.4e8 },
+        Token::new_number("12.2"),
+        Token::new_number("2.4e8"),
     ];
     test_lexer(input, &expects);
 }
 
-#[test]
-#[should_panic]
-fn test_illegal_number() {
-    let input = "0129";
-    let expects = [
-        Token::Number{ value: 10.0 },
-    ];
-    test_lexer(input, &expects);
-}
 
 #[test]
-#[should_panic]
 fn test_illegal_number2() {
     let input = "1.2.9";
     let expects = [
-        Token::Number{ value: 1.2 },
+        Token::new_number("1.2.9"),
     ];
     test_lexer(input, &expects);
 }
@@ -126,24 +116,24 @@ _23 = 21;
     ";
     let expects = [
         Token::new_id("foo"),
-        Token::Assign,
+        TokenKind::Assign.into(),
         Token::new_number("42"),
-        Token::Semicolon,
+        TokenKind::Semicolon.into(),
 
         Token::new_id("_fo0"),
-        Token::Assign,
+        TokenKind::Assign.into(),
         Token::new_number("24"),
-        Token::Semicolon,
+        TokenKind::Semicolon.into(),
 
         Token::new_id("bar_f23"),
-        Token::Assign,
+        TokenKind::Assign.into(),
         Token::new_number("12"),
-        Token::Semicolon,
+        TokenKind::Semicolon.into(),
 
         Token::new_id("_23"),
-        Token::Assign,
+        TokenKind::Assign.into(),
         Token::new_number("21"),
-        Token::Semicolon,
+        TokenKind::Semicolon.into(),
     ];
     test_lexer(input, &expects);
 }
@@ -160,34 +150,34 @@ function foo() {
 }
     ";
     let expects = [
-        Token::Function,
-        Token::Identifier { name: "foo".to_string() },
-        Token::LParen,
-        Token::RParen,
-        Token::LBrace,
+        TokenKind::Function.into(),
+        Token::new_id("foo"),
+        TokenKind::LParen.into(),
+        TokenKind::RParen.into(),
+        TokenKind::LBrace.into(),
 
-        Token::If,
-        Token::LParen,
-        Token::Number { value: 5.0 },
-        Token::LT,
-        Token::Number { value: 10.0 },
-        Token::RParen,
+        TokenKind::If.into(),
+        TokenKind::LParen.into(),
+        Token::new_number("5"),
+        TokenKind::LT.into(),
+        Token::new_number("10"),
+        TokenKind::RParen.into(),
 
-        Token::LBrace,
-        Token::Return,
-        Token::True,
-        Token::Semicolon,
-        Token::RBrace,
+        TokenKind::LBrace.into(),
+        TokenKind::Return.into(),
+        TokenKind::True.into(),
+        TokenKind::Semicolon.into(),
+        TokenKind::RBrace.into(),
 
-        Token::Else,
-        Token::LBrace,
-        Token::Return,
-        Token::False,
-        Token::Semicolon,
-        Token::RBrace,
+        TokenKind::Else.into(),
+        TokenKind::LBrace.into(),
+        TokenKind::Return.into(),
+        TokenKind::False.into(),
+        TokenKind::Semicolon.into(),
+        TokenKind::RBrace.into(),
 
-        Token::RBrace,
-        Token::EOF,
+        TokenKind::RBrace.into(),
+        TokenKind::EOF.into(),
     ];
     test_lexer(input, &expects);
 }
@@ -199,25 +189,25 @@ let sum = add(1, 2);
 console.log(sum);
     ";
     let expects = [
-        Token::Let,
-        Token::Identifier { name: "sum".to_string() },
-        Token::Assign,
-        Token::Identifier { name: "add".to_string() },
-        Token::LParen,
-        Token::Number { value: 1.0 },
-        Token::Commas,
-        Token::Number { value: 2.0 },
-        Token::RParen,
-        Token::Semicolon,
+        TokenKind::Let.into(),
+        Token::new_id("sum"),
+        TokenKind::Assign.into(),
+        Token::new_id("add"),
+        TokenKind::LParen.into(),
+        Token::new_number("1"),
+        TokenKind::Commas.into(),
+        Token::new_number("2"),
+        TokenKind::RParen.into(),
+        TokenKind::Semicolon.into(),
 
-        Token::Identifier { name: "console".to_string() },
-        Token::Dot,
-        Token::Identifier { name: "log".to_string() },
-        Token::LParen,
-        Token::Identifier { name: "sum".to_string() },
-        Token::RParen,
-        Token::Semicolon,
-        Token::EOF,
+        Token::new_id("console"),
+        TokenKind::Dot.into(),
+        Token::new_id("log"),
+        TokenKind::LParen.into(),
+        Token::new_id("sum"),
+        TokenKind::RParen.into(),
+        TokenKind::Semicolon.into(),
+        TokenKind::EOF.into(),
     ];
     test_lexer(input, &expects);
 }
@@ -231,25 +221,25 @@ fn test_eq_ne() {
 11 === 11;
     ";
     let expects = [
-        Token::Number { value: 9.0 },
-        Token::EQ,
-        Token::Number { value: 9.0 },
-        Token::Semicolon,
+        Token::new_number("9"),
+        TokenKind::EQ.into(),
+        Token::new_number("9"),
+        TokenKind::Semicolon.into(),
 
-        Token::Number { value: 9.0 },
-        Token::NE,
-        Token::Number { value: 10.0 },
-        Token::Semicolon,
+        Token::new_number("9"),
+        TokenKind::NE.into(),
+        Token::new_number("10"),
+        TokenKind::Semicolon.into(),
 
-        Token::Number { value: 10.0 },
-        Token::SNE,
-        Token::Number { value: 11.0 },
-        Token::Semicolon,
+        Token::new_number("10"),
+        TokenKind::SNE.into(),
+        Token::new_number("11"),
+        TokenKind::Semicolon.into(),
 
-        Token::Number { value: 11.0 },
-        Token::SEQ,
-        Token::Number { value: 11.0 },
-        Token::Semicolon,
+        Token::new_number("11"),
+        TokenKind::SEQ.into(),
+        Token::new_number("11"),
+        TokenKind::Semicolon.into(),
     ];
     test_lexer(input, &expects);
 }

@@ -31,13 +31,13 @@ impl<'a> Lexer<'a> {
                     if self.peak_third_char() == b'=' {
                         self.read_char();
                         self.read_char();
-                        Token::SEQ
+                        Token::from(TokenKind::SEQ)
                     } else {
                         self.read_char();
-                        Token::EQ
+                        Token::from(TokenKind::EQ)
                     }
                 } else {
-                    Token::Assign
+                    Token::from(TokenKind::Assign)
                 }
             }
             b'!' => {
@@ -45,29 +45,29 @@ impl<'a> Lexer<'a> {
                     if self.peak_third_char() == b'=' {
                         self.read_char();
                         self.read_char();
-                        Token::SNE
+                        Token::from(TokenKind::SNE)
                     } else {
                         self.read_char();
-                        Token::NE
+                        Token::from(TokenKind::NE)
                     }
                 } else {
-                    Token::Band
+                    Token::from(TokenKind::Band)
                 }
             }
-            b'+' => Token::Plus,
-            b'-' => Token::Minus,
-            b'*' => Token::Asterisk,
-            b'/' => Token::Slash,
-            b'<' => Token::LT,
-            b'>' => Token::GT,
-            b',' => Token::Commas,
-            b';' => Token::Semicolon,
-            b'(' => Token::LParen,
-            b')' => Token::RParen,
-            b'{' => Token::LBrace,
-            b'}' => Token::RBrace,
-            b'.' => Token::Dot,
-            0 => Token::EOF,
+            b'+' => Token::from(TokenKind::Plus),
+            b'-' => Token::from(TokenKind::Minus),
+            b'*' => Token::from(TokenKind::Asterisk),
+            b'/' => Token::from(TokenKind::Slash),
+            b'<' => Token::from(TokenKind::LT),
+            b'>' => Token::from(TokenKind::GT),
+            b',' => Token::from(TokenKind::Commas),
+            b';' => Token::from(TokenKind::Semicolon),
+            b'(' => Token::from(TokenKind::LParen),
+            b')' => Token::from(TokenKind::RParen),
+            b'{' => Token::from(TokenKind::LBrace),
+            b'}' => Token::from(TokenKind::RBrace),
+            b'.' => Token::from(TokenKind::Dot),
+            0 => Token::from(TokenKind::EOF),
             _ => {
                 if self.ch.is_ascii_alphabetic() || self.ch == b'_' {
                     let name = self.read_identifier();
@@ -75,9 +75,9 @@ impl<'a> Lexer<'a> {
                 }
                 if self.ch.is_ascii_digit() {
                     let value = self.read_number();
-                    return Token::new_number(value);
+                    return Token::new(TokenKind::Number, value)
                 }
-                Token::Illegal
+                Token::new(TokenKind::Illegal, "")
             }
         };
         self.read_char();
@@ -134,10 +134,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn lookup_ident(name: &str) -> Token {
-        if let Some(v) = KEYWORKS.get(name) {
-            v.clone()
+        if let Some(kind) = KEYWORKS.get(name) {
+            (*kind).into()
         } else {
-            Token::new_id(name)
+            Token::new(TokenKind::Identifier, name)
         }
     }
 }

@@ -3,8 +3,8 @@
 
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum TokenKind {
     Illegal,
     EOF,
 
@@ -39,40 +39,55 @@ pub enum Token {
     Let,
     Return,
 
-    Identifier { name: String },
-    Number { value: f64 },
+    Identifier,
+    Number,
 }
 
-impl Token {
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Token<'a> {
+    pub kind: TokenKind,
+    pub literal: &'a str,
+}
+
+impl<'a> Token<'a> {
     #[inline(always)]
-    pub fn new_id(name: &str) -> Self {
-        Token::Identifier { name: name.to_string() }
+    pub fn new<'x: 'a>(kind: TokenKind, literal: &'x str) -> Self {
+        return Token{ kind, literal }
     }
-    pub fn new_number(value: &str) -> Self {
-        if value.starts_with("0x") || value.starts_with("0X") {
-            return Token::Number {
-                value: i64::from_str_radix(&value[2..], 16).unwrap() as f64
-            }
-        }
-        if value.starts_with('0') {
-            return Token::Number {
-                value: i64::from_str_radix(value, 8).unwrap() as f64
-            }
-        }
-        Token::Number { value: value.parse().unwrap() }
+
+    #[inline(always)]
+    pub fn new_id<'x: 'a>(id: &'x str) -> Self {
+        return Token{ kind: TokenKind::Identifier, literal: id }
+    }
+
+    #[inline(always)]
+    pub fn new_number<'x: 'a>(literal: &'x str) -> Self {
+        return Token{ kind: TokenKind::Number, literal }
     }
 }
+
+impl<'a> From<TokenKind> for Token<'a>  {
+
+    #[inline(always)]
+    fn from(kind: TokenKind) -> Self {
+        debug_assert_ne!(kind, TokenKind::Identifier);
+        debug_assert_ne!(kind, TokenKind::Number);
+        return Token { kind, literal: "" }
+    }
+}
+
+
 
 lazy_static! {
-    pub static ref KEYWORKS: HashMap<&'static str, Token> = {
+    pub static ref KEYWORKS: HashMap<&'static str, TokenKind> = {
         let mut map = HashMap::new();
-        map.insert("if", Token::If);
-        map.insert("else", Token::Else);
-        map.insert("true", Token::True);
-        map.insert("false", Token::False);
-        map.insert("function", Token::Function);
-        map.insert("let", Token::Let);
-        map.insert("return", Token::Return);
+        map.insert("if", TokenKind::If);
+        map.insert("else", TokenKind::Else);
+        map.insert("true", TokenKind::True);
+        map.insert("false", TokenKind::False);
+        map.insert("function", TokenKind::Function);
+        map.insert("let", TokenKind::Let);
+        map.insert("return", TokenKind::Return);
         map
     };
 }
