@@ -1,19 +1,16 @@
 
 use std::collections::HashMap;
-use std::error;
-use std::iter::Map;
-use std::string::ParseError;
 
 use crate::lexer::{token, Lexer};
 use crate::lexer::token::*;
-use crate::ast::{self, Expression, ExpressionStatement, NumberLiteral, PrefixExpression};
+use crate::ast::{self, ExpressionStatement, NumberLiteral, PrefixExpression};
 
 mod parser_test;
 
-type PrefixParseFn = fn(& mut Parser) -> Option<Box<dyn ast::Expression>>;
-type InfixParseFn = fn(Box<dyn ast::Expression>) -> Option<Box<dyn ast::Expression>>;
+type PrefixParseFn = fn(&mut Parser) -> Option<Box<dyn ast::Expression>>;
+type InfixParseFn = fn(&mut Parser, Box<dyn ast::Expression>) -> Option<Box<dyn ast::Expression>>;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 enum Precedence {
     Lowest,
     Equals,         // ==
@@ -22,6 +19,25 @@ enum Precedence {
     Product,        // * or /
     Prefix,         // - or !
     Call,           // myFunction()
+}
+
+lazy_static! {
+    static ref PRECEDENCES: HashMap<TokenKind, Precedence> = {
+        let mut map = HashMap::new();
+        map.insert(TokenKind::EQ, Precedence::Equals);
+        map.insert(TokenKind::NE, Precedence::Equals);
+        map.insert(TokenKind::SEQ, Precedence::Equals);
+        map.insert(TokenKind::SNE, Precedence::Equals);
+
+        map.insert(TokenKind::LT, Precedence::LessGreater);
+        map.insert(TokenKind::GT, Precedence::LessGreater);
+
+        map.insert(TokenKind::Plus, Precedence::Sum);
+        map.insert(TokenKind::Minus, Precedence::Sum);
+        map.insert(TokenKind::Asterisk, Precedence::Product);
+        map.insert(TokenKind::Slash, Precedence::Product);
+        map
+    };
 }
 
 pub struct Parser<'a> {
@@ -53,6 +69,17 @@ impl<'a> Parser<'a> {
         parser.prefix_parse_fns.insert(TokenKind::Number, Self::parse_number);
         parser.prefix_parse_fns.insert(TokenKind::Minus, Self::parse_prefix_expression);
         parser.prefix_parse_fns.insert(TokenKind::Band, Self::parse_prefix_expression);
+
+        parser.infix_parse_fns.insert(TokenKind::Plus, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::Minus, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::Asterisk, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::Slash, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::LT, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::GT, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::EQ, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::NE, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::SEQ, Self::parse_infix_expression);
+        parser.infix_parse_fns.insert(TokenKind::SNE, Self::parse_infix_expression);
         return parser;
     }
 
@@ -122,7 +149,24 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Box<dyn ast::Expression>> {
         if let Some(prefix_fn) = self.prefix_parse_fns.get(&self.current_token.kind) {
-            return prefix_fn(self);
+            let mut lhs = prefix_fn(self);
+            if let None = lhs {
+                return None;
+            }
+            while self.peak_token.kind != TokenKind::Semicolon && precedence < self.peak_precedence() {
+                if let Some(infix_fn) = self.infix_parse_fns.get(&self.peak_token.kind) {
+                    // If run the following statement, rust will say that `self is borrowed as immutable
+                    // in the self.infix_parse_fns.get(...)`.
+                    // But actually, it's not borrowed at all. And, if we call next_token() in the infix_fn,
+                    // rust will not complain anything.
+                    // I think it must be a bug of rustc. Anyway, just call it in the infix_fn for now.
+                    // self.next_token();
+                    lhs = infix_fn(self, lhs.unwrap());
+                } else {
+                    return lhs;
+                }
+            }
+            return lhs;
         }
         self.no_prefix_error(self.current_token.kind);
         return None;
@@ -173,6 +217,21 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_infix_expression(parser: &mut Parser, lhs: Box<dyn ast::Expression>) -> Option<Box<dyn ast::Expression>> {
+        // For reasons why we call it here, see [parse_expression]
+        parser.next_token();
+
+        let op = parser.current_token.kind;
+        let precedence = parser.current_precedence();
+        parser.next_token();
+        if let Some(rhs) = parser.parse_expression(precedence) {
+            return Some(Box::new(
+                ast::InfixExpression{ op, lhs, rhs, }
+            ))
+        }
+        return None;
+    }
+
     fn next_token(&mut self) {
         self.current_token.clone_from(&self.peak_token);
         self.peak_token = self.lexer.next_token();
@@ -197,6 +256,20 @@ impl<'a> Parser<'a> {
     fn no_prefix_error(&mut self, kind: TokenKind) {
         let msg = format!("no prefix parse function for {:?} found", kind);
         self.errors.push(msg);
+    }
+
+    fn peak_precedence(&self) -> Precedence {
+        if let Some(p) = PRECEDENCES.get(&self.peak_token.kind) {
+            return *p
+        }
+        return Precedence::Lowest;
+    }
+
+    fn current_precedence(&self) -> Precedence {
+        if let Some(p) = PRECEDENCES.get(&self.current_token.kind) {
+            return *p
+        }
+        return Precedence::Lowest;
     }
 }
 

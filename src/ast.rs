@@ -1,4 +1,3 @@
-use std::fmt::format;
 
 use crate::lexer::token::TokenKind;
 
@@ -78,14 +77,41 @@ pub struct PrefixExpression {
 impl ToString for PrefixExpression {
     fn to_string(&self) -> String {
         match self.op {
-            TokenKind::Band => format!("!({})", self.expression.to_string()),
-            TokenKind::Minus => format!("-({})", self.expression.to_string()),
+            TokenKind::Band => format!("(!{})", self.expression.to_string()),
+            TokenKind::Minus => format!("(-{})", self.expression.to_string()),
             _ => panic!("invalid prefix operator")
         }
     }
 }
 
 impl Expression for PrefixExpression { }
+
+pub struct InfixExpression {
+    pub op: TokenKind,
+    pub lhs: Box<dyn Expression>,
+    pub rhs: Box<dyn Expression>,
+}
+
+impl ToString for InfixExpression {
+    fn to_string(&self) -> String {
+        let op = match self.op {
+            TokenKind::Plus => "+",
+            TokenKind::Minus => "-",
+            TokenKind::Asterisk => "*",
+            TokenKind::Slash => "/",
+            TokenKind::LT => "<",
+            TokenKind::GT => ">",
+            TokenKind::EQ => "==",
+            TokenKind::NE => "!=",
+            TokenKind::SEQ => "===",
+            TokenKind::SNE => "!==",
+            _ => panic!("invalid infix operator {:?}", self.op)
+        };
+        format!("({} {} {})", self.lhs.to_string(), op, self.rhs.to_string())
+    }
+}
+
+impl Expression for InfixExpression { }
 
 pub struct LetStatement {
     pub id: Identifier,

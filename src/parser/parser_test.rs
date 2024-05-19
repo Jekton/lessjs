@@ -3,7 +3,6 @@
 use std::io::stderr;
 use std::io::Write;
 
-use crate::ast::Statement;
 use crate::lexer;
 use crate::parser::*;
 
@@ -141,8 +140,77 @@ fn test_prefix_expression() {
     check_parser_errors(&mut parser);
 
     let expects = [
-        "-(5);",
-        "!(5);",
+        "(-5);",
+        "(!5);",
+    ];
+
+    test_statements(&program, &expects);
+
+}
+
+#[test]
+fn test_infix_expression() {
+    let input = r"
+5 + 5;
+5 - 5;
+5 * 5;
+5 / 5;
+5 > 5;
+5 < 5;
+5 == 5;
+5 != 5;
+";
+    let lexer = lexer::Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+    check_parser_errors(&mut parser);
+
+    let expects = [
+        "(5 + 5);",
+        "(5 - 5);",
+        "(5 * 5);",
+        "(5 / 5);",
+        "(5 > 5);",
+        "(5 < 5);",
+        "(5 == 5);",
+        "(5 != 5);",
+    ];
+
+    test_statements(&program, &expects);
+}
+
+#[test]
+fn test_operator_precedences() {
+    let input = r"
+-a * b;
+!-a;
+a + b + c;
+a + b - c;
+a * b * c;
+a * b / c;
+a + b / c;
+a + b * c + d / e - f;
+5 > 4 == 3 < 4;
+5 < 4 != 3 > 4;
+3 + 4 * 5 == 3 * 1 + 4 * 5;
+";
+    let lexer = lexer::Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+    check_parser_errors(&mut parser);
+
+    let expects = [
+        "((-a) * b);",
+        "(!(-a));",
+        "((a + b) + c);",
+        "((a + b) - c);",
+        "((a * b) * c);",
+        "((a * b) / c);",
+        "(a + (b / c));",
+        "(((a + (b * c)) + (d / e)) - f);",
+        "((5 > 4) == (3 < 4));",
+        "((5 < 4) != (3 > 4));",
+        "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));",
     ];
 
     test_statements(&program, &expects);
