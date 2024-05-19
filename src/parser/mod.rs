@@ -5,7 +5,7 @@ use std::string::ParseError;
 
 use crate::lexer::{token, Lexer};
 use crate::lexer::token::*;
-use crate::ast::{self, ExpressionStatement};
+use crate::ast::{self, ExpressionStatement, NumberLiteral};
 
 mod parser_test;
 
@@ -49,6 +49,7 @@ impl<'a> Parser<'a> {
         parser.next_token();
 
         parser.prefix_parse_fns.insert(TokenKind::Identifier, Self::parse_identifier);
+        parser.prefix_parse_fns.insert(TokenKind::Number, Self::parse_number);
         return parser;
     }
 
@@ -124,6 +125,19 @@ impl<'a> Parser<'a> {
 
     fn parse_identifier(parser: &mut Parser) -> Box<dyn ast::Expression> {
         return Box::new(ast::Identifier{ name: parser.current_token.literal.to_string() })
+    }
+
+    fn parse_number(parser: &mut Parser) -> Box<dyn ast::Expression> {
+        let literal = parser.current_token.literal;
+        if literal.starts_with("0x") || literal.starts_with("0X") {
+            let value = i64::from_str_radix(&literal[2..], 16).unwrap() as f64;
+            return Box::new(NumberLiteral{value})
+        }
+        if literal.starts_with('0') {
+            let value = i64::from_str_radix(literal, 8).unwrap() as f64;
+            return Box::new(NumberLiteral{value})
+        }
+        return Box::new(NumberLiteral{value: literal.parse().unwrap()});
     }
 
     fn next_token(&mut self) {

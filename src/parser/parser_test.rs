@@ -7,6 +7,8 @@ use crate::ast::Statement;
 use crate::lexer;
 use crate::parser::*;
 
+use self::ast::Program;
+
 #[test]
 fn test_let_statements() {
     let input = r"
@@ -87,4 +89,42 @@ foobar;
 
     assert_eq!(program.statements.len(), 1);
     assert_eq!(program.statements[0].to_string(), "foobar;");
+}
+
+#[test]
+fn test_number_literal() {
+    let input = r"
+5; 012; 034; 0; 042;
+0x12; 0xff; 0Xfd; 0x42;
+12.2; 2.4e8;
+";
+    let lexer = lexer::Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+    check_parser_errors(&mut parser);
+
+    let expects = [
+        "5;",
+        "10;",
+        "28;",
+        "0;",
+        "34;",
+
+        "18;",
+        "255;",
+        "253;",
+        "66;",
+
+        "12.2;",
+        "240000000;",
+    ];
+
+    test_statements(&program, &expects);
+}
+
+fn test_statements(program: &Program, expects: &[&str]) {
+    assert_eq!(program.statements.len(), expects.len());
+    for (index, statement) in program.statements.iter().enumerate() {
+        assert_eq!(expects[index], statement.to_string());
+    }
 }

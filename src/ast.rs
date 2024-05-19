@@ -44,6 +44,18 @@ impl ToString for Identifier {
 
 impl Expression for Identifier {}
 
+pub struct NumberLiteral {
+    pub value: f64,
+}
+
+impl ToString for NumberLiteral {
+    fn to_string(&self) -> String {
+        self.value.to_string()
+    }
+}
+
+impl Expression for NumberLiteral { }
+
 pub struct NoOpExpression;
 
 impl ToString for NoOpExpression {
