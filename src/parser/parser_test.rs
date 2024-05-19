@@ -128,3 +128,23 @@ fn test_statements(program: &Program, expects: &[&str]) {
         assert_eq!(expects[index], statement.to_string());
     }
 }
+
+#[test]
+fn test_prefix_expression() {
+    let input = r"
+-5;
+!5;
+";
+    let lexer = lexer::Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+    check_parser_errors(&mut parser);
+
+    let expects = [
+        "-(5);",
+        "!(5);",
+    ];
+
+    test_statements(&program, &expects);
+
+}

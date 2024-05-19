@@ -1,16 +1,17 @@
 
 use std::collections::HashMap;
+use std::error;
 use std::iter::Map;
 use std::string::ParseError;
 
 use crate::lexer::{token, Lexer};
 use crate::lexer::token::*;
-use crate::ast::{self, ExpressionStatement, NumberLiteral};
+use crate::ast::{self, Expression, ExpressionStatement, NumberLiteral, PrefixExpression};
 
 mod parser_test;
 
-type PrefixParseFn = fn(& mut Parser) -> Box<dyn ast::Expression>;
-type InfixParseFn = fn(Box<dyn ast::Expression>) -> Box<dyn ast::Expression>;
+type PrefixParseFn = fn(& mut Parser) -> Option<Box<dyn ast::Expression>>;
+type InfixParseFn = fn(Box<dyn ast::Expression>) -> Option<Box<dyn ast::Expression>>;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
@@ -50,6 +51,8 @@ impl<'a> Parser<'a> {
 
         parser.prefix_parse_fns.insert(TokenKind::Identifier, Self::parse_identifier);
         parser.prefix_parse_fns.insert(TokenKind::Number, Self::parse_number);
+        parser.prefix_parse_fns.insert(TokenKind::Minus, Self::parse_prefix_expression);
+        parser.prefix_parse_fns.insert(TokenKind::Band, Self::parse_prefix_expression);
         return parser;
     }
 
@@ -109,35 +112,65 @@ impl<'a> Parser<'a> {
 
     fn parse_expression_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
         if let Some(expression) = self.parse_expression(Precedence::Lowest) {
-            return Some(
-                Box::new(ExpressionStatement{ expression })
-            );
+            if self.peak_token.kind == TokenKind::Semicolon {
+                self.next_token();
+            }
+            return Some( Box::new(ExpressionStatement{ expression }));
         }
         return None;
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Box<dyn ast::Expression>> {
         if let Some(prefix_fn) = self.prefix_parse_fns.get(&self.current_token.kind) {
-            return Some(prefix_fn(self));
+            return prefix_fn(self);
+        }
+        self.no_prefix_error(self.current_token.kind);
+        return None;
+    }
+
+    fn parse_identifier(parser: &mut Parser) -> Option<Box<dyn ast::Expression>> {
+        let id = ast::Identifier{ name: parser.current_token.literal.to_string() };
+        return Some(Box::new(id));
+    }
+
+    fn parse_number(parser: &mut Parser) -> Option<Box<dyn ast::Expression>> {
+        let literal = parser.current_token.literal;
+        if literal.starts_with("0x") || literal.starts_with("0X") {
+            match i64::from_str_radix(&literal[2..], 16) {
+                Ok(v) => return Some(Box::new(NumberLiteral{value: v as f64})),
+                Err(e) => {
+                    let msg = format!("fail to parse [{}]: {}", literal, e);
+                    parser.errors.push(msg);
+                }
+            }
+        }
+        if literal.starts_with('0') {
+            match i64::from_str_radix(&literal, 8) {
+                Ok(v) => return Some(Box::new(NumberLiteral{value: v as f64})),
+                Err(e) => {
+                    let msg = format!("fail to parse [{}]: {}", literal, e);
+                    parser.errors.push(msg);
+                }
+            }
+        }
+        match literal.parse::<f64>() {
+            Ok(v) => return Some(Box::new(NumberLiteral{value: v})),
+            Err(e) => {
+                let msg = format!("fail to parse [{}]: {}", literal, e);
+                parser.errors.push(msg);
+            }
         }
         return None;
     }
 
-    fn parse_identifier(parser: &mut Parser) -> Box<dyn ast::Expression> {
-        return Box::new(ast::Identifier{ name: parser.current_token.literal.to_string() })
-    }
-
-    fn parse_number(parser: &mut Parser) -> Box<dyn ast::Expression> {
-        let literal = parser.current_token.literal;
-        if literal.starts_with("0x") || literal.starts_with("0X") {
-            let value = i64::from_str_radix(&literal[2..], 16).unwrap() as f64;
-            return Box::new(NumberLiteral{value})
+    fn parse_prefix_expression(parser: &mut Parser) -> Option<Box<dyn ast::Expression>> {
+        let op = parser.current_token.kind;
+        parser.next_token();
+        if let Some(e) = parser.parse_expression(Precedence::Prefix) {
+            Some(Box::new(PrefixExpression{ op, expression: e}))
+        } else {
+            None
         }
-        if literal.starts_with('0') {
-            let value = i64::from_str_radix(literal, 8).unwrap() as f64;
-            return Box::new(NumberLiteral{value})
-        }
-        return Box::new(NumberLiteral{value: literal.parse().unwrap()});
     }
 
     fn next_token(&mut self) {
@@ -160,4 +193,10 @@ impl<'a> Parser<'a> {
                 expect, self.peak_token.kind);
         self.errors.push(msg);
     }
+
+    fn no_prefix_error(&mut self, kind: TokenKind) {
+        let msg = format!("no prefix parse function for {:?} found", kind);
+        self.errors.push(msg);
+    }
 }
+

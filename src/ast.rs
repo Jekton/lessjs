@@ -1,3 +1,7 @@
+use std::fmt::format;
+
+use crate::lexer::token::TokenKind;
+
 
 
 pub trait Node : ToString {
@@ -9,7 +13,7 @@ pub trait Expression : Node {
 pub trait Statement : Node {
 }
 
-impl<T : ToString> Node for T {}
+impl<T: ToString> Node for T {}
 
 pub struct Program {
     pub statements: Vec<Box<dyn Statement>>,
@@ -65,6 +69,23 @@ impl ToString for NoOpExpression {
 }
 
 impl Expression for NoOpExpression {}
+
+pub struct PrefixExpression {
+    pub op: TokenKind,
+    pub expression: Box<dyn Expression>,
+}
+
+impl ToString for PrefixExpression {
+    fn to_string(&self) -> String {
+        match self.op {
+            TokenKind::Band => format!("!({})", self.expression.to_string()),
+            TokenKind::Minus => format!("-({})", self.expression.to_string()),
+            _ => panic!("invalid prefix operator")
+        }
+    }
+}
+
+impl Expression for PrefixExpression { }
 
 pub struct LetStatement {
     pub id: Identifier,
