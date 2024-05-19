@@ -1,9 +1,27 @@
 
+use std::collections::HashMap;
+use std::iter::Map;
+use std::string::ParseError;
+
 use crate::lexer::{token, Lexer};
 use crate::lexer::token::*;
-use crate::ast;
+use crate::ast::{self, ExpressionStatement};
 
 mod parser_test;
+
+type PrefixParseFn = fn(& mut Parser) -> Box<dyn ast::Expression>;
+type InfixParseFn = fn(Box<dyn ast::Expression>) -> Box<dyn ast::Expression>;
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum Precedence {
+    Lowest,
+    Equals,         // ==
+    LessGreater,    // > or <
+    Sum,            // + or -
+    Product,        // * or /
+    Prefix,         // - or !
+    Call,           // myFunction()
+}
 
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
@@ -12,6 +30,9 @@ pub struct Parser<'a> {
     peak_token: token::Token<'a>,
 
     errors: Vec<String>,
+
+    prefix_parse_fns: HashMap<TokenKind, PrefixParseFn>,
+    infix_parse_fns: HashMap<TokenKind, InfixParseFn>,
 }
 
 impl<'a> Parser<'a> {
@@ -21,9 +42,13 @@ impl<'a> Parser<'a> {
             current_token: TokenKind::EOF.into(),
             peak_token: TokenKind::EOF.into(),
             errors: Vec::new(),
+            prefix_parse_fns: HashMap::new(),
+            infix_parse_fns: HashMap::new(),
         };
         parser.next_token();
         parser.next_token();
+
+        parser.prefix_parse_fns.insert(TokenKind::Identifier, Self::parse_identifier);
         return parser;
     }
 
@@ -44,7 +69,7 @@ impl<'a> Parser<'a> {
         match self.current_token.kind {
             TokenKind::Let => self.parse_let_statement(),
             TokenKind::Return => self.parse_return_statement(),
-            _ => None,
+            _ => self.parse_expression_statement(),
         }
     }
 
@@ -79,6 +104,26 @@ impl<'a> Parser<'a> {
             value: Box::new(ast::NoOpExpression{})
         };
         return Some(Box::new(s));
+    }
+
+    fn parse_expression_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
+        if let Some(expression) = self.parse_expression(Precedence::Lowest) {
+            return Some(
+                Box::new(ExpressionStatement{ expression })
+            );
+        }
+        return None;
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Box<dyn ast::Expression>> {
+        if let Some(prefix_fn) = self.prefix_parse_fns.get(&self.current_token.kind) {
+            return Some(prefix_fn(self));
+        }
+        return None;
+    }
+
+    fn parse_identifier(parser: &mut Parser) -> Box<dyn ast::Expression> {
+        return Box::new(ast::Identifier{ name: parser.current_token.literal.to_string() })
     }
 
     fn next_token(&mut self) {

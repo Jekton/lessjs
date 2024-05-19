@@ -24,7 +24,7 @@ impl ToString for Program {
         let mut ret = String::new();
         for statement in &self.statements {
             if !ret.is_empty() {
-                ret += ";\n";
+                ret += "\n";
             }
             ret += &statement.to_string();
         }
@@ -61,7 +61,7 @@ pub struct LetStatement {
 
 impl ToString for LetStatement {
     fn to_string(&self) -> String {
-        format!("let {}", self.id.to_string())
+        format!("let {} = {};", self.id.to_string(), self.value.to_string())
     }
 }
 
@@ -73,8 +73,22 @@ pub struct ReturnStatement {
 
 impl ToString for ReturnStatement {
     fn to_string(&self) -> String {
-        "return".to_string()
+        format!("return {};", self.value.to_string())
     }
 }
 
 impl Statement for ReturnStatement { }
+
+pub struct ExpressionStatement {
+    pub expression: Box<dyn Expression>,
+}
+
+impl ToString for ExpressionStatement {
+    fn to_string(&self) -> String {
+        format!("{};", self.expression.to_string())
+    }
+}
+
+impl Statement for ExpressionStatement { }
+
+

@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq, PartialOrd, Ord, Hash)]
 pub enum TokenKind {
     Illegal,
     EOF,

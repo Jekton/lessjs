@@ -21,9 +21,9 @@ let foobar = 838383;
     check_parser_errors(&mut parser);
 
     assert_eq!(program.statements.len(), 3);
-    test_statement(&program.statements[0], "let x");
-    test_statement(&program.statements[1], "let y");
-    test_statement(&program.statements[2], "let foobar");
+    test_statement(&program.statements[0], "let x = \"no-op\";");
+    test_statement(&program.statements[1], "let y = \"no-op\";");
+    test_statement(&program.statements[2], "let foobar = \"no-op\";");
 }
 
 #[test]
@@ -71,6 +71,20 @@ return 993 322;
 
     assert_eq!(program.statements.len(), 3);
     for statement in &program.statements {
-        assert_eq!(statement.to_string(), "return");
+        assert_eq!(statement.to_string(), "return \"no-op\";");
     }
+}
+
+#[test]
+fn test_identifier_expression() {
+    let input = r"
+foobar;
+";
+    let lexer = lexer::Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+    check_parser_errors(&mut parser);
+
+    assert_eq!(program.statements.len(), 1);
+    assert_eq!(program.statements[0].to_string(), "foobar;");
 }
