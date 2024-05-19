@@ -66,3 +66,15 @@ impl ToString for LetStatement {
 }
 
 impl Statement for LetStatement {}
+
+pub struct ReturnStatement {
+    pub value: Box<dyn Expression>,
+}
+
+impl ToString for ReturnStatement {
+    fn to_string(&self) -> String {
+        "return".to_string()
+    }
+}
+
+impl Statement for ReturnStatement { }

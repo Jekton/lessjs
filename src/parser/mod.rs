@@ -43,11 +43,12 @@ impl<'a> Parser<'a> {
     pub fn parse_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
         match self.current_token.kind {
             TokenKind::Let => self.parse_let_statement(),
+            TokenKind::Return => self.parse_return_statement(),
             _ => None,
         }
     }
 
-    pub fn parse_let_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
+    fn parse_let_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
         if !self.expect_peak(TokenKind::Identifier) {
             return None;
         }
@@ -63,6 +64,18 @@ impl<'a> Parser<'a> {
         }
         let s = ast::LetStatement{
             id,
+            value: Box::new(ast::NoOpExpression{})
+        };
+        return Some(Box::new(s));
+    }
+
+    fn parse_return_statement(&mut self) -> Option<Box<dyn ast::Statement>> {
+        self.next_token();
+        // TODO: parse expression
+        while self.current_token.kind != TokenKind::Semicolon {
+            self.next_token();
+        }
+        let s = ast::ReturnStatement{
             value: Box::new(ast::NoOpExpression{})
         };
         return Some(Box::new(s));

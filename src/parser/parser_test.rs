@@ -3,6 +3,7 @@
 use std::io::stderr;
 use std::io::Write;
 
+use crate::ast::Statement;
 use crate::lexer;
 use crate::parser::*;
 
@@ -54,4 +55,22 @@ fn check_parser_errors(parser: &mut Parser) {
 
 fn test_statement(s: &Box<dyn ast::Statement>, string: &str) {
     assert_eq!(s.to_string(), string);
+}
+
+#[test]
+fn test_return_statement() {
+    let input = r"
+return 5;
+return 10;
+return 993 322;
+";
+    let lexer = lexer::Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program();
+    check_parser_errors(&mut parser);
+
+    assert_eq!(program.statements.len(), 3);
+    for statement in &program.statements {
+        assert_eq!(statement.to_string(), "return");
+    }
 }
