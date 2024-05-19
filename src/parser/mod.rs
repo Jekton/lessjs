@@ -1,10 +1,8 @@
 
 use crate::lexer::{token, Lexer};
 use crate::lexer::token::*;
+use crate::ast;
 
-use self::ast::{LetStatement, NoOpExpression};
-
-pub mod ast;
 mod parser_test;
 
 pub struct Parser<'a> {
@@ -63,9 +61,9 @@ impl<'a> Parser<'a> {
         while self.current_token.kind != TokenKind::Semicolon {
             self.next_token();
         }
-        let s = LetStatement{
+        let s = ast::LetStatement{
             id,
-            value: Box::new(NoOpExpression{})
+            value: Box::new(ast::NoOpExpression{})
         };
         return Some(Box::new(s));
     }
